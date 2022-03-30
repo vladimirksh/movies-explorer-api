@@ -4,6 +4,12 @@ const {
   NotOwnerError,
   NotFoundError,
 } = require('../errors');
+const {
+  INCORRECT_DATA,
+  NONEXISTENT_MOVIE_ID,
+  DELETE_SOMEONE_MOVIE,
+  DELETE_MOVIE,
+} = require('../utils/constants');
 
 module.exports.getMovies = (req, res, next) => {
   Movie.find({ owner: req.user._id })
@@ -42,14 +48,14 @@ module.exports.createMovie = (req, res, next) => {
   })
     .then((movie) => {
       if (!movie) {
-        throw new NotValidateError('Переданы некорректные данные');
+        throw new NotValidateError(INCORRECT_DATA);
       } else {
         res.send(movie);
       }
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new NotValidateError('Переданы некорректные данные'));
+        next(new NotValidateError(INCORRECT_DATA));
       } else {
         next(err);
       }
@@ -58,13 +64,13 @@ module.exports.createMovie = (req, res, next) => {
 
 module.exports.deleteMovie = (req, res, next) => {
   Movie.findById(req.params.filmId)
-    .orFail(() => new NotFoundError('Передан несуществующий id фильма'))
+    .orFail(() => new NotFoundError(NONEXISTENT_MOVIE_ID))
     .then((movie) => {
       if (!movie.owner.equals(req.user._id)) {
-        return next(new NotOwnerError('Попытка удалить чужой фильм'));
+        return next(new NotOwnerError(DELETE_SOMEONE_MOVIE));
       }
       return movie.remove()
-        .then(() => res.send({ message: 'Фильм удалён' }));
+        .then(() => res.send({ message: DELETE_MOVIE }));
     })
     .catch(next);
 };

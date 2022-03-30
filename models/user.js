@@ -1,4 +1,3 @@
-/* eslint-disable func-names */
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const mongoose = require('mongoose');
@@ -30,7 +29,7 @@ const userSchema = new mongoose.Schema({
 
 // добавим метод findUserByCredentials схеме пользователя
 // у него будет два параметра — почта и пароль
-userSchema.statics.findUserByCredentials = function (email, password) {
+userSchema.statics.findUserByCredentials = function findUser(email, password) {
   return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {

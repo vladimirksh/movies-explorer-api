@@ -1,7 +1,14 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-
+const { SECRET_KEY } = require('../utils/configuration');
+const {
+  INCORRECT_EMAIL_PASSWORD,
+  EMAIL_ALREADY_USE,
+  INCORRECT_DATA_CREATE,
+  INCORRECT_DATA_PATCH,
+  USER_NOT_FOUND,
+} = require('../utils/constants');
 const {
   NotValidateError,
   NotFoundError,
@@ -29,9 +36,9 @@ module.exports.createUser = (req, res, next) => {
     })
     .catch((err) => {
       if (err.code === 11000) {
-        next(new NotDoubleError('Данный email уже используется'));
+        next(new NotDoubleError(EMAIL_ALREADY_USE));
       } else if (err.name === 'ValidationError') {
-        next(new NotValidateError('Переданы некорректные данные при создании пользователя'));
+        next(new NotValidateError(INCORRECT_DATA_CREATE));
       } else {
         next(err);
       }
@@ -65,14 +72,16 @@ module.exports.patchUser = (req, res, next) => {
   )
     .then((user) => {
       if (!user) {
-        throw new NotFoundError('Пользователь по указанному id не найден');
+        throw new NotFoundError(USER_NOT_FOUND);
       } else {
         res.send(user);
       }
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new NotValidateError('Переданы некорректные данные при обновлении профиля'));
+      if (err.code === 11000) {
+        next(new NotDoubleError(EMAIL_ALREADY_USE));
+      } else if (err.name === 'ValidationError') {
+        next(new NotValidateError(INCORRECT_DATA_PATCH));
       } else {
         next(err);
       }
@@ -85,11 +94,11 @@ module.exports.login = (req, res, next) => {
   return User.findUserByCredentials(email, password)
     .then((user) => {
       // создадим токен
-      const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' });
+      const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : SECRET_KEY, { expiresIn: '7d' });
       res.send({ token });
     })
     .catch(() => {
       // ошибка аутентификации
-      next(new NotAuthError('невозможно авторизоваться'));
+      next(new NotAuthError(INCORRECT_EMAIL_PASSWORD));
     });
 };
